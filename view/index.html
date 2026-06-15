@@ -205,6 +205,7 @@
     const elTimerText = document.getElementById('timer-text')
     const elStatus = document.getElementById('save-status')
 
+    const STORAGE_KEY = 'plugin_auth_msc_secret'
     let callId = 0
     const pending = {}
     let currentFilePath = ''
@@ -212,7 +213,14 @@
     function callPlugin(method, params) {
       return new Promise((resolve, reject) => {
         const id = ++callId
-        pending[id] = { resolve, reject }
+        const timer = setTimeout(() => {
+          delete pending[id]
+          reject(new Error('timeout'))
+        }, 2000)
+        pending[id] = {
+          resolve: (v) => { clearTimeout(timer); resolve(v) },
+          reject: (e) => { clearTimeout(timer); reject(e) },
+        }
         window.parent.postMessage({ type: 'plugin-call', id, method, params }, '*')
       })
     }
@@ -232,24 +240,39 @@
     })
 
     async function loadSecret() {
+      // 优先从 service 读取（磁盘持久化）
       try {
         const data = await callPlugin('getSecret', {})
         if (data?.result?.secret) {
           elSecret.value = data.result.secret
+          localStorage.setItem(STORAGE_KEY, data.result.secret)
           updateOTP()
+          return
         }
       } catch {}
+      // 回退到 localStorage
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        elSecret.value = saved
+        updateOTP()
+      }
     }
 
-    let saveTimer = null
+    loadSecret()
+
+    function saveSecret(val) {
+      // localStorage 即时保存
+      localStorage.setItem(STORAGE_KEY, val)
+      showStatus()
+      // service 异步持久化到磁盘
+      callPlugin('saveSecret', { secret: val }).catch(() => {})
+    }
+
     elSecret.addEventListener('input', () => {
       const val = elSecret.value.replace(/\s/g, '')
-      clearTimeout(saveTimer)
-      saveTimer = setTimeout(() => {
-        if (val) {
-          callPlugin('saveSecret', { secret: val }).then(showStatus)
-        }
-      }, 300)
+      if (val) {
+        saveSecret(val)
+      }
       updateOTP()
     })
 
@@ -264,7 +287,8 @@
       elToken.innerText = '------'
       elProgress.style.width = '0%'
       elTimerText.innerText = '已清空'
-      callPlugin('clearSecret', {})
+      localStorage.removeItem(STORAGE_KEY)
+      callPlugin('clearSecret', {}).catch(() => {})
     }
 
     // --- TOTP via Web Crypto API ---
