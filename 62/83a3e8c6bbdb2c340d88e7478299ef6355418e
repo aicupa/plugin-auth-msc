@@ -1,0 +1,20 @@
+view/index.html
+  s_1225ae3a542c03::t_d56f08e5ab45ac 208,216-223,243,248,250,253-258,262-268,274,290-291
+  s_1225ae3a542c03::t_05b2028a74e0ab 261,273,275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "6283a3e8c6bbdb2c340d88e7478299ef6355418e",
+  "prompts": {},
+  "sessions": {
+    "s_1225ae3a542c03": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c05e4636-8d2f-4ba0-ac1c-ceba89d5839e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "muhai <muhai.li@tuya.com>"
+    }
+  }
+}
