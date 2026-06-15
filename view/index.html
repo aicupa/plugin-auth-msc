@@ -209,6 +209,46 @@
     let callId = 0
     const pending = {}
     let currentFilePath = ''
+    let _encKey = null
+
+    async function getEncKey() {
+      if (_encKey) return _encKey
+      const enc = new TextEncoder()
+      const material = await crypto.subtle.importKey(
+        'raw', enc.encode('plugin-auth-msc'), { name: 'PBKDF2' }, false, ['deriveKey']
+      )
+      _encKey = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: enc.encode('plugin-auth-msc-ls'), iterations: 100000, hash: 'SHA-256' },
+        material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+      )
+      return _encKey
+    }
+
+    async function encryptLocal(text) {
+      if (!text) return ''
+      const key = await getEncKey()
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text))
+      const buf = new Uint8Array(iv.length + encrypted.byteLength)
+      buf.set(iv)
+      buf.set(new Uint8Array(encrypted), iv.length)
+      return 'ENC:' + btoa(String.fromCharCode(...buf))
+    }
+
+    async function decryptLocal(data) {
+      if (!data) return ''
+      if (!data.startsWith('ENC:')) return data
+      try {
+        const raw = Uint8Array.from(atob(data.slice(4)), c => c.charCodeAt(0))
+        const key = await getEncKey()
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: raw.slice(0, 12) }, key, raw.slice(12)
+        )
+        return new TextDecoder().decode(decrypted)
+      } catch {
+        return ''
+      }
+    }
 
     function callPlugin(method, params) {
       return new Promise((resolve, reject) => {
@@ -240,31 +280,30 @@
     })
 
     async function loadSecret() {
-      // 优先从 service 读取（磁盘持久化）
       try {
         const data = await callPlugin('getSecret', {})
         if (data?.result?.secret) {
           elSecret.value = data.result.secret
-          localStorage.setItem(STORAGE_KEY, data.result.secret)
+          encryptLocal(data.result.secret).then(enc => localStorage.setItem(STORAGE_KEY, enc))
           updateOTP()
           return
         }
       } catch {}
-      // 回退到 localStorage
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        elSecret.value = saved
-        updateOTP()
+        const val = await decryptLocal(saved)
+        if (val) {
+          elSecret.value = val
+          updateOTP()
+        }
       }
     }
 
     loadSecret()
 
     function saveSecret(val) {
-      // localStorage 即时保存
-      localStorage.setItem(STORAGE_KEY, val)
+      encryptLocal(val).then(enc => localStorage.setItem(STORAGE_KEY, enc))
       showStatus()
-      // service 异步持久化到磁盘
       callPlugin('saveSecret', { secret: val }).catch(() => {})
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "@aicupa/plugin-auth-msc",
   "version": "1.0.1",
-  "description": "TOTP 身份验证器 — 生成基于时间的一次性密码",
+  "description": "TOTP Authenticator — Generate time-based one-time passwords",
   "view": "./view",
   "main": "./service",
   "viewSize": {
