@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>身份验证器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0b0b0b;
+      color: #e5e5e5;
+      font-family: -apple-system, 'Helvetica Neue', 'PingFang SC', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      padding: 32px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .header h2 {
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header h2::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #3b82f6;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .btn-clear {
+      background: none;
+      border: none;
+      color: #6b7280;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .btn-clear:hover { color: #f87171; }
+    .field-label {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: #6b7280;
+      margin-bottom: 8px;
+      margin-left: 4px;
+    }
+    .input-wrap {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .input-wrap input {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #e5e5e5;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      letter-spacing: 0.1em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-wrap input::placeholder { color: rgba(255,255,255,0.15); }
+    .input-wrap input:focus { border-color: rgba(59,130,246,0.5); }
+    .save-status {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #22c55e;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .token-panel {
+      text-align: center;
+      background: rgba(255,255,255,0.04);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 32px 16px 24px;
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .token-display {
+      font-size: 52px;
+      font-weight: 700;
+      color: #60a5fa;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.15em;
+      text-shadow: 0 0 24px rgba(59,130,246,0.25);
+      line-height: 1;
+    }
+    .btn-copy {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-copy:hover { color: #60a5fa; background: rgba(255,255,255,0.05); }
+    .btn-copy.copied { color: #22c55e; }
+    .progress-wrap {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .progress-track {
+      width: 180px;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: rgba(59,130,246,0.7);
+      width: 0%;
+      transition: width 1s linear;
+      border-radius: 4px;
+    }
+    .timer-text {
+      text-align: center;
+      font-size: 10px;
+      color: #4b5563;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .icon-copy, .icon-check { width: 16px; height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h2>身份验证器</h2>
+      <button class="btn-clear" onclick="clearKey()">清空数据</button>
+    </div>
+
+    <label class="field-label">Secret Key</label>
+    <div class="input-wrap">
+      <input type="password" id="secret" placeholder="粘贴 Base32 密钥">
+      <span id="save-status" class="save-status">已保存</span>
+    </div>
+
+    <div class="token-panel">
+      <button class="btn-copy" id="copy-btn" onclick="copyToken()" title="复制口令">
+        <svg class="icon-copy" id="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <svg class="icon-check" id="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </button>
+      <div id="token" class="token-display">------</div>
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div id="progress" class="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <p id="timer-text" class="timer-text">等待输入...</p>
+  </div>
+
+  <script>
+    const elSecret = document.getElementById('secret')
+    const elToken = document.getElementById('token')
+    const elProgress = document.getElementById('progress')
+    const elTimerText = document.getElementById('timer-text')
+    const elStatus = document.getElementById('save-status')
+
+    let callId = 0
+    const pending = {}
+    let currentFilePath = ''
+
+    function callPlugin(method, params) {
+      return new Promise((resolve, reject) => {
+        const id = ++callId
+        pending[id] = { resolve, reject }
+        window.parent.postMessage({ type: 'plugin-call', id, method, params }, '*')
+      })
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data
+      if (msg?.type === 'plugin-init') {
+        currentFilePath = msg.filePath || ''
+        loadSecret()
+        return
+      }
+      if (msg?.type === 'plugin-result' && pending[msg.id]) {
+        const { resolve, reject } = pending[msg.id]
+        delete pending[msg.id]
+        msg.error ? reject(new Error(msg.error)) : resolve(msg.result)
+      }
+    })
+
+    async function loadSecret() {
+      try {
+        const data = await callPlugin('getSecret', {})
+        if (data?.result?.secret) {
+          elSecret.value = data.result.secret
+          updateOTP()
+        }
+      } catch {}
+    }
+
+    let saveTimer = null
+    elSecret.addEventListener('input', () => {
+      const val = elSecret.value.replace(/\s/g, '')
+      clearTimeout(saveTimer)
+      saveTimer = setTimeout(() => {
+        if (val) {
+          callPlugin('saveSecret', { secret: val }).then(showStatus)
+        }
+      }, 300)
+      updateOTP()
+    })
+
+    function showStatus() {
+      elStatus.style.opacity = '1'
+      setTimeout(() => (elStatus.style.opacity = '0'), 1500)
+    }
+
+    function clearKey() {
+      if (!elSecret.value) return
+      elSecret.value = ''
+      elToken.innerText = '------'
+      elProgress.style.width = '0%'
+      elTimerText.innerText = '已清空'
+      callPlugin('clearSecret', {})
+    }
+
+    // --- TOTP via Web Crypto API ---
+
+    function base32Decode(input) {
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+      let bits = ''
+      for (const ch of input.toUpperCase()) {
+        const v = alphabet.indexOf(ch)
+        if (v === -1) continue
+        bits += v.toString(2).padStart(5, '0')
+      }
+      const bytes = []
+      for (let i = 0; i + 8 <= bits.length; i += 8) {
+        bytes.push(parseInt(bits.substring(i, i + 8), 2))
+      }
+      return new Uint8Array(bytes)
+    }
+
+    async function hmacSha1(keyBytes, message) {
+      const key = await crypto.subtle.importKey(
+        'raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+      )
+      const sig = await crypto.subtle.sign('HMAC', key, message)
+      return new Uint8Array(sig)
+    }
+
+    async function generateTOTP(secret) {
+      const keyBytes = base32Decode(secret)
+      if (keyBytes.length === 0) return null
+
+      const epoch = Math.floor(Date.now() / 1000)
+      const counter = Math.floor(epoch / 30)
+
+      const buf = new ArrayBuffer(8)
+      const view = new DataView(buf)
+      view.setUint32(0, Math.floor(counter / 0x100000000))
+      view.setUint32(4, counter & 0xffffffff)
+
+      const hmac = await hmacSha1(keyBytes, buf)
+      const offset = hmac[hmac.length - 1] & 0x0f
+      const code =
+        (((hmac[offset] & 0x7f) << 24) |
+          ((hmac[offset + 1] & 0xff) << 16) |
+          ((hmac[offset + 2] & 0xff) << 8) |
+          (hmac[offset + 3] & 0xff)) %
+        1000000
+
+      return code.toString().padStart(6, '0')
+    }
+
+    async function updateOTP() {
+      const secret = elSecret.value.replace(/\s/g, '')
+      if (!secret || secret.length < 8) {
+        elToken.innerText = '------'
+        elProgress.style.width = '0%'
+        elTimerText.innerText = '等待输入...'
+        return
+      }
+
+      try {
+        const token = await generateTOTP(secret)
+        if (token) {
+          elToken.innerText = token
+          const remain = 30 - (Math.floor(Date.now() / 1000) % 30)
+          elProgress.style.width = ((remain / 30) * 100) + '%'
+          elTimerText.innerText = `有效时间还剩 ${remain} 秒`
+        }
+      } catch {
+        elToken.innerText = 'ERROR'
+        elTimerText.innerText = '密钥格式错误'
+      }
+    }
+
+    async function copyToken() {
+      const token = elToken.innerText
+      if (!token || token === '------' || token === 'ERROR') return
+      try {
+        await navigator.clipboard.writeText(token)
+        document.getElementById('icon-copy').style.display = 'none'
+        document.getElementById('icon-check').style.display = 'block'
+        document.getElementById('copy-btn').classList.add('copied')
+        setTimeout(() => {
+          document.getElementById('icon-copy').style.display = 'block'
+          document.getElementById('icon-check').style.display = 'none'
+          document.getElementById('copy-btn').classList.remove('copied')
+        }, 1500)
+      } catch {}
+    }
+
+    setInterval(updateOTP, 1000)
+  </script>
+</body>
+</html>
