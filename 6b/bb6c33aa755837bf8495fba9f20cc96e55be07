@@ -1,0 +1,14 @@
+.npmignore
+  h_eabc34dcaf7833 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "6bbb6c33aa755837bf8495fba9f20cc96e55be07",
+  "prompts": {},
+  "humans": {
+    "h_eabc34dcaf7833": {
+      "author": "muhai <muhai.li@tuya.com>"
+    }
+  }
+}
