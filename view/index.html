@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>身份验证器</title>
+  <title>Authenticator</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -165,18 +165,18 @@
 <body>
   <div class="card">
     <div class="header">
-      <h2>身份验证器</h2>
-      <button class="btn-clear" onclick="clearKey()">清空数据</button>
+      <h2>Authenticator</h2>
+      <button class="btn-clear" onclick="clearKey()">Clear</button>
     </div>
 
     <label class="field-label">Secret Key</label>
     <div class="input-wrap">
-      <input type="password" id="secret" placeholder="粘贴 Base32 密钥">
-      <span id="save-status" class="save-status">已保存</span>
+      <input type="password" id="secret" placeholder="Paste Base32 secret key">
+      <span id="save-status" class="save-status">Saved</span>
     </div>
 
     <div class="token-panel">
-      <button class="btn-copy" id="copy-btn" onclick="copyToken()" title="复制口令">
+      <button class="btn-copy" id="copy-btn" onclick="copyToken()" title="Copy token">
         <svg class="icon-copy" id="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -195,7 +195,7 @@
       </div>
     </div>
 
-    <p id="timer-text" class="timer-text">等待输入...</p>
+    <p id="timer-text" class="timer-text">Waiting for input...</p>
   </div>
 
   <script>
@@ -325,7 +325,7 @@
       elSecret.value = ''
       elToken.innerText = '------'
       elProgress.style.width = '0%'
-      elTimerText.innerText = '已清空'
+      elTimerText.innerText = 'Cleared'
       localStorage.removeItem(STORAGE_KEY)
       callPlugin('clearSecret', {}).catch(() => {})
     }
@@ -384,7 +384,7 @@
       if (!secret || secret.length < 8) {
         elToken.innerText = '------'
         elProgress.style.width = '0%'
-        elTimerText.innerText = '等待输入...'
+        elTimerText.innerText = 'Waiting for input...'
         return
       }
 
@@ -394,11 +394,11 @@
           elToken.innerText = token
           const remain = 30 - (Math.floor(Date.now() / 1000) % 30)
           elProgress.style.width = ((remain / 30) * 100) + '%'
-          elTimerText.innerText = `有效时间还剩 ${remain} 秒`
+          elTimerText.innerText = `${remain}s remaining`
         }
       } catch {
         elToken.innerText = 'ERROR'
-        elTimerText.innerText = '密钥格式错误'
+        elTimerText.innerText = 'Invalid key format'
       }
     }
 
