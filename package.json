@@ -12,7 +12,7 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "dependencies": {
-    "@aicupa/api": "^1.0.1"
+  "devDependencies": {
+    "@aicupa/api": "^1.0.4"
   }
 }
