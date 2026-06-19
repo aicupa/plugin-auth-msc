@@ -1,6 +1,6 @@
 {
   "name": "@aicupa/plugin-auth-msc",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "TOTP Authenticator — Generate time-based one-time passwords",
   "view": "./view",
   "main": "./service",
